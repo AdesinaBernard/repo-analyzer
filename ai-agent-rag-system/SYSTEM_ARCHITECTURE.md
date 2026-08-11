@@ -394,3 +394,7 @@ THE FUTURE ARCHITECTURE
                    ┌───────┴────────┐
                    ▼                ▼
               Vector DB          LLM Service
+
+
+The important thing is that we've structured the code so that these pieces can later be separated rather than needing to rewrite the entire system.
+
