@@ -1,6 +1,4 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-
 
 from agents.autonomous_research_agent import run_autonomous_research
 from rag.rag import ask_rag
@@ -14,7 +12,6 @@ from app.schemas import (
     HealthResponse
 )
 
-
 from app.config import config
 from app.logging_config import logger
 
@@ -23,10 +20,6 @@ app = FastAPI(
     title=config.APP_NAME,
     version=config.APP_VERSION
 )
-
-
-class QueryRequest(BaseModel):
-    query: str
 
 
 @app.get("/")
@@ -39,33 +32,22 @@ def home():
 
 @app.get("/health", response_model=HealthResponse)
 def health_check():
+    logger.info("Health check requested.")
     return {
         "status": "ok",
         "service": "ai-agent-rag-system"
     }
 
-@app.get("/health")
-
-def health():
-
-    logger.info("Health check requested.")
-
-    return {
-
-        "status": "healthy",
-
-        "llm": "connected",
-
-        "vector_db": "loaded"
-
-    }
-
 @app.post("/rag", response_model=RAGResponse)
 def rag_endpoint(request: QueryRequest):
+    logger.info("RAG Request: %s", request.query)
+    result = ask_rag(request.query)
+    logger.info("RAG completed.")
+
     return {
         "type": "rag",
         "query": request.query,
-        "result": ask_rag(request.query)
+        "result": result
     }
 
 
@@ -98,19 +80,3 @@ def agent_endpoint(request: QueryRequest):
         "result": result
     }
 
-@app.post("/rag")
-def rag_endpoint(request: QueryRequest):
-
-    logger.info(
-        f"RAG Request: {request.query}"
-    )
-
-    result = ask_rag(request.query)
-
-    logger.info("RAG completed.")
-
-    return {
-        "type": "rag",
-        "query": request.query,
-        "result": result
-    }
