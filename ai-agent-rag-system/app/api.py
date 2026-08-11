@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 
 from agents.autonomous_research_agent import run_autonomous_research
 from rag.rag import ask_rag
@@ -14,6 +14,22 @@ from app.schemas import (
 
 from app.config import config
 from app.logging_config import logger
+
+from uuid import uuid4
+
+from core.job_store import (
+    create_job,
+    get_job
+)
+
+from agents.research_worker import (
+    process_research_job
+)
+
+from app.schemas import (
+    ResearchJobCreatedResponse,
+    ResearchJobStatusResponse
+)
 
 
 app = FastAPI(
@@ -80,3 +96,50 @@ def agent_endpoint(request: QueryRequest):
         "result": result
     }
 
+@app.post(
+    "/research/jobs",
+    response_model=ResearchJobCreatedResponse
+)
+def create_research_job(
+    request: QueryRequest,
+    background_tasks: BackgroundTasks
+):
+    job_id = str(uuid4())
+
+    create_job(
+        job_id,
+        request.query
+    )
+
+    background_tasks.add_task(
+        process_research_job,
+        job_id,
+        request.query
+    )
+
+    logger.info(
+        "Research job created | job_id=%s | query=%s",
+        job_id,
+        request.query
+    )
+
+    return {
+        "job_id": job_id,
+        "status": "pending",
+        "query": request.query
+    }
+
+@app.get(
+    "/research/jobs/{job_id}",
+    response_model=ResearchJobStatusResponse
+)
+def research_job_status(job_id: str):
+    job = get_job(job_id)
+
+    if not job:
+        raise HTTPException(
+            status_code=404,
+            detail="Research job not found"
+        )
+
+    return job

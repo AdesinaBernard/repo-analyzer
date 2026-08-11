@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, Optional
 
 
 class QueryRequest(BaseModel):
@@ -28,3 +28,16 @@ class AgentResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     service: str
+
+class ResearchJobCreatedResponse(BaseModel):
+    job_id: str
+    status: str
+    query: str
+
+
+class ResearchJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    query: str
+    result: Optional[Any] = None
+    error: Optional[str] = None
